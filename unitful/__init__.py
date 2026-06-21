@@ -1,13 +1,15 @@
 """Public API"""
 
-from . import numpy_support  # noqa: F401
-from . import constants  # noqa: F401
-from .matplotlib_support import setup_matplotlib  # noqa: F401
-from .pandas_support import setup_pandas  # noqa: F401
+from . import (
+    constants,  # noqa: F401
+    numpy_support,  # noqa: F401
+)
 from .decorators import Dim, requires, returns
 from .dimension import Dimension, dimensionless
 from .exceptions import DimensionError
+from .matplotlib_support import setup_matplotlib  # noqa: F401
 from .numpy_support import QuantityArray
+from .pandas_support import setup_pandas  # noqa: F401
 from .quantity import Quantity
 from .registry import Unit, registry
 from .serialization import from_json, to_json
