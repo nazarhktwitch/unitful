@@ -1,0 +1,62 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "unitful"
+version = "1.0.0"
+description = "Physical units as first-class values with dimensional analysis"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+keywords = ["units", "dimensional analysis", "physics", "quantities"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering",
+    "Typing :: Typed",
+]
+dependencies = []
+
+[project.optional-dependencies]
+numpy = ["numpy>=1.24"]
+dev = [
+    "numpy>=1.24",
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "mypy>=1.10",
+    "ruff>=0.4",
+]
+
+[project.urls]
+Homepage = "https://github.com/nazarhktwitch/unitful"
+Repository = "https://github.com/nazarhktwitch/unitful"
+Issues = "https://github.com/nazarhktwitch/unitful/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["unitful"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--tb=short"
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+warn_unused_ignores = true
+exclude = ["numpy_support\\.py"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+ignore = ["E501"]
