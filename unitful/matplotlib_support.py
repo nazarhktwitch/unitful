@@ -15,12 +15,12 @@ def setup_matplotlib() -> None:
     from .numpy_support import QuantityArray
     from .quantity import Quantity
 
-    class UnitfulConverter(munits.ConversionInterface):
+    class UnitfulConverter(munits.ConversionInterface):  # type: ignore[misc]
         @staticmethod
         def axisinfo(unit: Any, axis: Any) -> Any:
             symbol = unit.symbol or unit.name
             # Provide a nicely formatted default label [unit]
-            return munits.AxisInfo(label=f"[{symbol}]")  # type: ignore[no-untyped-call]
+            return munits.AxisInfo(label=f"[{symbol}]")
 
         @staticmethod
         def default_units(x: Any, axis: Any) -> Any:

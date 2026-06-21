@@ -220,7 +220,7 @@ class Quantity:
         if not isinstance(other, Quantity):
             return NotImplemented
         a, b = self._cmp_si(other)
-        return a < b
+        return bool(a < b)
 
     def __le__(self, other: object) -> bool:
         if not isinstance(other, Quantity):
@@ -234,7 +234,7 @@ class Quantity:
         if not isinstance(other, Quantity):
             return NotImplemented
         a, b = self._cmp_si(other)
-        return a > b
+        return bool(a > b)
 
     def __ge__(self, other: object) -> bool:
         if not isinstance(other, Quantity):
