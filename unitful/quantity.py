@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import copy
 import math
+import re
+from decimal import Decimal
 from fractions import Fraction
 from typing import TYPE_CHECKING, Any
 
@@ -34,14 +36,14 @@ class Quantity:
 
     __slots__ = ("_value", "_unit")
 
-    def __init__(self, value: float, unit: Unit) -> None:
-        self._value = float(value)
+    def __init__(self, value: Any, unit: Unit) -> None:
+        self._value = value
         self._unit = unit
 
     # --- properties ---
 
     @property
-    def magnitude(self) -> float:
+    def magnitude(self) -> Any:
         """Raw numeric value in this quantity's unit"""
         return self._value
 
@@ -55,19 +57,19 @@ class Quantity:
 
     # --- SI conversion helpers ---
 
-    def _to_si_value(self) -> float:
+    def _to_si_value(self) -> Any:
         """Convert value to SI base units (applying offset if any)"""
         if self._unit.is_offset:
-            return self._value * self._unit.scale + self._unit.offset
-        return self._value * self._unit.scale
+            return _add(_mul(self._value, self._unit.scale), self._unit.offset)
+        return _mul(self._value, self._unit.scale)
 
     @classmethod
-    def _from_si(cls, si_value: float, target_unit: Unit) -> Quantity:
+    def _from_si(cls, si_value: Any, target_unit: Unit) -> Quantity:
         """Build a Quantity from an SI value in the given target unit"""
         if target_unit.is_offset:
-            value = (si_value - target_unit.offset) / target_unit.scale
+            value = _truediv(_sub(si_value, target_unit.offset), target_unit.scale)
         else:
-            value = si_value / target_unit.scale
+            value = _truediv(si_value, target_unit.scale)
         return cls(value, target_unit)
 
     # --- conversion ---
@@ -115,7 +117,7 @@ class Quantity:
             )
         # Convert other to self's unit
         other_converted = other.to(self._unit)
-        return Quantity(self._value + other_converted._value, self._unit)
+        return Quantity(_add(self._value, other_converted._value), self._unit)
 
     def __radd__(self, other: object) -> Quantity:
         if other == 0:
@@ -135,7 +137,7 @@ class Quantity:
                 other._unit.dimension.label(),
             )
         other_converted = other.to(self._unit)
-        return Quantity(self._value - other_converted._value, self._unit)
+        return Quantity(_sub(self._value, other_converted._value), self._unit)
 
     def __mul__(self, other: object) -> Quantity:
         if isinstance(other, Quantity):
@@ -143,13 +145,13 @@ class Quantity:
             new_scale = self._unit.scale * other._unit.scale
             new_unit = _make_derived_unit(new_dim, new_scale, self._unit, other._unit, "*")
             return Quantity(self._value * other._value, new_unit)
-        if isinstance(other, (int, float)):
-            return Quantity(self._value * other, self._unit)
+        if isinstance(other, (int, float, Decimal, Fraction)):
+            return Quantity(_mul(self._value, other), self._unit)
         return NotImplemented
 
     def __rmul__(self, other: object) -> Quantity:
-        if isinstance(other, (int, float)):
-            return Quantity(other * self._value, self._unit)
+        if isinstance(other, (int, float, Decimal, Fraction)):
+            return Quantity(_mul(other, self._value), self._unit)
         return NotImplemented
 
     def __truediv__(self, other: object) -> Quantity:
@@ -157,17 +159,17 @@ class Quantity:
             new_dim = self._unit.dimension / other._unit.dimension
             new_scale = self._unit.scale / other._unit.scale
             new_unit = _make_derived_unit(new_dim, new_scale, self._unit, other._unit, "/")
-            return Quantity(self._value / other._value, new_unit)
-        if isinstance(other, (int, float)):
-            return Quantity(self._value / other, self._unit)
+            return Quantity(_truediv(self._value, other._value), new_unit)
+        if isinstance(other, (int, float, Decimal, Fraction)):
+            return Quantity(_truediv(self._value, other), self._unit)
         return NotImplemented
 
     def __rtruediv__(self, other: object) -> Quantity:
-        if isinstance(other, (int, float)):
+        if isinstance(other, (int, float, Decimal, Fraction)):
             inv_dim = dimensionless / self._unit.dimension
             inv_scale = 1.0 / self._unit.scale
             new_unit = _make_derived_unit(inv_dim, inv_scale, None, self._unit, "1/")
-            return Quantity(other / self._value, new_unit)
+            return Quantity(_truediv(other, self._value), new_unit)
         return NotImplemented
 
     def __pow__(self, exp: int | float | Fraction) -> Quantity:
@@ -193,7 +195,7 @@ class Quantity:
 
     # --- comparisons ---
 
-    def _cmp_si(self, other: Quantity) -> tuple[float, float]:
+    def _cmp_si(self, other: Quantity) -> tuple[Any, Any]:
         if self._unit.dimension != other._unit.dimension:
             raise DimensionError.incompatible(
                 "compare",
@@ -208,7 +210,9 @@ class Quantity:
             return NotImplemented
         try:
             a, b = self._cmp_si(other)
-            return math.isclose(a, b, rel_tol=1e-9)
+            if type(a) is float or type(b) is float:
+                return bool(math.isclose(float(a), float(b), rel_tol=1e-9))
+            return bool(a == b)
         except DimensionError:
             return False
 
@@ -222,7 +226,9 @@ class Quantity:
         if not isinstance(other, Quantity):
             return NotImplemented
         a, b = self._cmp_si(other)
-        return a <= b or math.isclose(a, b, rel_tol=1e-9)
+        if type(a) is float or type(b) is float:
+            return bool(a <= b or math.isclose(float(a), float(b), rel_tol=1e-9))
+        return bool(a <= b)
 
     def __gt__(self, other: object) -> bool:
         if not isinstance(other, Quantity):
@@ -234,12 +240,17 @@ class Quantity:
         if not isinstance(other, Quantity):
             return NotImplemented
         a, b = self._cmp_si(other)
-        return a >= b or math.isclose(a, b, rel_tol=1e-9)
+        if type(a) is float or type(b) is float:
+            return bool(a >= b or math.isclose(float(a), float(b), rel_tol=1e-9))
+        return bool(a >= b)
 
     def __hash__(self) -> int:
         # Quantities equal after conversion should hash the same
         si = self._to_si_value()
-        return hash((round(si, 9), self._unit.dimension))
+        try:
+            return hash((round(float(si), 9), self._unit.dimension))
+        except TypeError:
+            return hash((si, self._unit.dimension))
 
     # --- display ---
 
@@ -250,7 +261,47 @@ class Quantity:
         return f"Quantity({self._value!r}, {_unit_symbol(self._unit)!r})"
 
     def __format__(self, format_spec: str) -> str:
-        return apply_format(self._value, _unit_symbol(self._unit), format_spec)
+        return apply_format(float(self._value), _unit_symbol(self._unit), format_spec)
+
+    @classmethod
+    def from_string(cls, s: str) -> Quantity:
+        from .registry import registry
+        match = re.match(r"^([+-]?\d+\.?\d*(?:[eE][+-]?\d+)?(?:/\d+)?)\s*(.*)$", s.strip())
+        if not match:
+            raise ValueError(f"Cannot parse quantity string: {s!r}")
+        num_str, unit_str = match.groups()
+        if "/" in num_str and "e" not in num_str.lower():
+            num_part, den_part = num_str.split("/", 1)
+            value = float(num_part) / float(den_part)
+        else:
+            value = float(num_str)
+            
+        unit_str = unit_str.strip()
+        if not unit_str:
+            from .dimension import dimensionless
+            return cls(value, Unit("", "", dimensionless, 1.0))
+            
+        # Parse expression using eval with registry units
+        import ast
+        expr = unit_str.replace("^", "**")
+        try:
+            node = ast.parse(expr, mode='eval')
+        except SyntaxError:
+            raise ValueError(f"Invalid unit expression: {unit_str!r}")
+            
+        for n in ast.walk(node):
+            if isinstance(n, ast.Call):
+                raise ValueError("Function calls not allowed in unit expressions")
+                
+        safe_locals = {name: Quantity(1.0, u) for name, u in registry._by_name.items()}
+        # Also provide symbol lookups for 'm', 's', 'kg'
+        safe_locals.update({u.symbol: Quantity(1.0, u) for u in registry._by_name.values() if u.symbol})
+        
+        unit_qty = eval(compile(node, '<string>', 'eval'), {"__builtins__": {}}, safe_locals)
+        if not isinstance(unit_qty, Quantity):
+            raise ValueError(f"Invalid unit expression: {unit_str!r}")
+            
+        return cls(_mul(value, unit_qty.magnitude), unit_qty.unit)
 
     # --- pickle / copy ---
 
@@ -301,3 +352,51 @@ def _make_derived_unit(
         sym = ""
         name = ""
     return Unit(name=name, symbol=sym, dimension=dim, scale=scale)
+
+def _mul(a: Any, b: Any) -> Any:
+    try:
+        if isinstance(a, Fraction) and isinstance(b, float) and b.is_integer():
+            return a * int(b)
+        if isinstance(b, Fraction) and isinstance(a, float) and a.is_integer():
+            return int(a) * b
+        return a * b
+    except TypeError:
+        if isinstance(a, Decimal):
+            return a * Decimal(str(b))
+        if isinstance(b, Decimal):
+            return Decimal(str(a)) * b
+        raise
+
+def _truediv(a: Any, b: Any) -> Any:
+    try:
+        if isinstance(a, Fraction) and isinstance(b, float) and b.is_integer():
+            return a / int(b)
+        if isinstance(b, Fraction) and isinstance(a, float) and a.is_integer():
+            return int(a) / b
+        return a / b
+    except TypeError:
+        if isinstance(a, Decimal):
+            return a / Decimal(str(b))
+        if isinstance(b, Decimal):
+            return Decimal(str(a)) / b
+        raise
+
+def _add(a: Any, b: Any) -> Any:
+    try:
+        return a + b
+    except TypeError:
+        if isinstance(a, Decimal):
+            return a + Decimal(str(b))
+        if isinstance(b, Decimal):
+            return Decimal(str(a)) + b
+        raise
+
+def _sub(a: Any, b: Any) -> Any:
+    try:
+        return a - b
+    except TypeError:
+        if isinstance(a, Decimal):
+            return a - Decimal(str(b))
+        if isinstance(b, Decimal):
+            return Decimal(str(a)) - b
+        raise

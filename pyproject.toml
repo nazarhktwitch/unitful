@@ -54,7 +54,11 @@ warn_unused_ignores = true
 exclude = ["numpy_support\\.py"]
 
 [[tool.mypy.overrides]]
-module = "numpy.*"
+module = [
+    "numpy.*",
+    "pandas.*",
+    "matplotlib.*"
+]
 ignore_missing_imports = true
 
 [tool.ruff]

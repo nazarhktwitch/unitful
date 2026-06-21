@@ -81,6 +81,17 @@ degC = _q("degC", "degC", _Theta, 1.0,    273.15)
 degF = _q("degF", "degF", _Theta, 5/9,    273.15 - 32 * 5/9)
 
 
+# Current
+A    = _q("A",    "A",    _I, 1.0)
+mA   = _q("mA",   "mA",   _I, 1e-3)
+
+# Amount of substance
+mol  = _q("mol",  "mol",  _N_dim, 1.0)
+
+# Luminous intensity
+cd   = _q("cd",   "cd",   _J, 1.0)
+
+
 # Force
 _Force = Dimension(M=1, L=1, T=-2)
 N_unit = _q("N",   "N",   _Force, 1.0)

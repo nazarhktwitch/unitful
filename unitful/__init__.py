@@ -1,7 +1,9 @@
 """Public API"""
 
-# Import numpy_support to install the ndarray patch (no-op if numpy absent)
 from . import numpy_support  # noqa: F401
+from . import constants  # noqa: F401
+from .matplotlib_support import setup_matplotlib  # noqa: F401
+from .pandas_support import setup_pandas  # noqa: F401
 from .decorators import Dim, requires, returns
 from .dimension import Dimension, dimensionless
 from .exceptions import DimensionError
