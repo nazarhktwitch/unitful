@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "unitful"
-version = "1.0.0"
+version = "1.1.0"
 description = "Physical units as first-class values with dimensional analysis"
 readme = "README.md"
 license = { file = "LICENSE" }
