@@ -311,38 +311,3 @@ def _quantity_function(func, types, args, kwargs):
         return QuantityArray(result, arr._unit)
 
     return NotImplemented
-
-
-# ---------------------------------------------------------------------------
-# Patch ndarray.__mul__ so that `np.array([1, 2, 3]) * m` works
-# ---------------------------------------------------------------------------
-
-def _patch_numpy() -> None:
-    """Install QuantityArray creation when multiplying ndarray by a Quantity"""
-    if not _NUMPY:
-        return
-
-    _orig_mul = np.ndarray.__mul__
-
-    def _new_mul(self, other):
-        if isinstance(other, Quantity):
-            return QuantityArray(self * other._value, other._unit)
-        if isinstance(other, QuantityArray):
-            new_unit = other._unit
-            return QuantityArray(self * other._array, new_unit)
-        return _orig_mul(self, other)
-
-    np.ndarray.__mul__ = _new_mul  # type: ignore[method-assign]
-
-    _orig_rmul = np.ndarray.__rmul__
-
-    def _new_rmul(self, other):
-        if isinstance(other, Quantity):
-            return QuantityArray(self * other._value, other._unit)
-        return _orig_rmul(self, other)
-
-    np.ndarray.__rmul__ = _new_rmul  # type: ignore[method-assign]
-
-
-if _NUMPY:
-    _patch_numpy()
