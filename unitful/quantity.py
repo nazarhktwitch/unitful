@@ -266,7 +266,7 @@ class Quantity:
     # --- numpy protocol ---
 
     def __array__(self, dtype: Any = None, copy: Any = None) -> Any:
-        import numpy as np  # type: ignore[import-not-found]
+        import numpy as np
         arr = np.array([self._value], dtype=dtype)
         return arr
 

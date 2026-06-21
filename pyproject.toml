@@ -53,6 +53,10 @@ strict = true
 warn_unused_ignores = true
 exclude = ["numpy_support\\.py"]
 
+[[tool.mypy.overrides]]
+module = "numpy.*"
+ignore_missing_imports = true
+
 [tool.ruff]
 target-version = "py310"
 line-length = 100
