@@ -3,9 +3,7 @@
 [![PyPI version](https://img.shields.io/pypi/v/unitful.svg?style=flat-square&color=blue)](https://pypi.org/project/unitful/)
 [![Python](https://img.shields.io/pypi/pyversions/unitful.svg?style=flat-square)](https://pypi.org/project/unitful/)
 [![CI](https://img.shields.io/github/actions/workflow/status/nazarhktwitch/unitful/publish.yml?style=flat-square&label=CI)](https://github.com/nazarhktwitch/unitful/actions)
-[![Coverage](https://img.shields.io/codecov/c/github/nazarhktwitch/unitful?style=flat-square)](https://codecov.io/gh/nazarhktwitch/unitful)
 [![License](https://img.shields.io/pypi/l/unitful.svg?style=flat-square)](LICENSE)
-[![Downloads](https://img.shields.io/pypi/dm/unitful?style=flat-square&color=green)](https://pypi.org/project/unitful/)
 
 Physical units as first-class Python values
 
